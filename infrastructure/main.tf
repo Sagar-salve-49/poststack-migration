@@ -47,3 +47,34 @@ module "ecs" {
   alb_target_group_arn        = module.alb.target_group_arn
   container_port              = var.container_port
 }
+
+module "cicd" {
+  source = "./modules/cicd"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  aws_region         = var.aws_region
+  ecr_repository_arn = module.ecs.ecr_repository_arn
+  ecr_repository_url = module.ecs.ecr_repository_url
+  log_group_name     = "/aws/codebuild/${var.project_name}-${var.environment}-app"
+}
+
+module "cicd_pipeline" {
+  source = "./modules/cicd-pipeline"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  github_connection_arn = "arn:aws:codeconnections:ap-south-1:459640517515:connection/f4ada60d-bb62-42b2-b692-9277ae81b45c"
+  github_repository     = "Sagar-salve-49/poststack-migration"
+  github_branch         = "master"
+
+  codebuild_project_name = module.cicd.codebuild_project_name
+
+  ecs_cluster_name = module.ecs.ecs_cluster_name
+  ecs_service_name = module.ecs.ecs_service_name
+
+  ecs_task_execution_role_arn = "arn:aws:iam::459640517515:role/poststack-migration-dev-ecs-task-execution"
+  ecs_task_role_arn           = "arn:aws:iam::459640517515:role/poststack-migration-dev-ecs-task"
+}
