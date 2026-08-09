@@ -3,26 +3,30 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging into ECR
+      - echo "Logging into ECR"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/poststack-migration-dev-app
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
       - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
-      - echo BUILD IMAGE TAG
-      - echo $IMAGE_TAG
+      - echo "IMAGE_TAG=$IMAGE_TAG"
 
   build:
     commands:
-      - echo Validating application
+      - echo "Validating application"
       - python3 -m py_compile test-app/app.py
-      - echo Building Docker image
+      - echo "Building Docker image"
       - docker build -t $ECR_URI:$IMAGE_TAG ./test-app
 
   post_build:
     commands:
-      - echo Pushing image to ECR
-      - docker push $ECR_URI:$IMAGE_TAG
-      - echo Creating deployment artifact
+      - echo "Pushing image to ECR"
+      - |
+        if aws ecr describe-images --repository-name poststack-migration-dev-app --image-ids imageTag=$IMAGE_TAG --region $AWS_DEFAULT_REGION >/dev/null 2>&1; then
+          echo "Image tag $IMAGE_TAG already exists. ECR is immutable, so skipping push."
+        else
+          docker push $ECR_URI:$IMAGE_TAG
+        fi
+      - echo "Creating ECS deployment artifact"
       - echo '[{"name":"app","imageUri":"'$ECR_URI':'$IMAGE_TAG'"}]' > imagedefinitions.json
       - cat imagedefinitions.json
 
