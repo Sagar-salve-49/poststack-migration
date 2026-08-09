@@ -1,0 +1,26 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+tfplan
+tfplan.*
+crash.log
+crash.*.log
+
+# Terraform variables / secrets
+*.tfvars
+*.tfvars.json
+
+# Terraform backup files
+*.backup
+*.bak
+
+# Local/editor files
+.vscode/
+.idea/
+.DS_Store
+
+# OS files
+Thumbs.db
