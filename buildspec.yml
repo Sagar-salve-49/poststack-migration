@@ -33,3 +33,5 @@ phases:
 artifacts:
   files:
     - imagedefinitions.json
+
+# CI/CD immutable ECR tag handling
