@@ -3,26 +3,27 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR
+      - echo Logging into ECR
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/poststack-migration-dev-app
-      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
-      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}
-      - echo ImageTag=${IMAGE_TAG}
+      - ECR_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/poststack-migration-dev-app
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
+      - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo BUILD IMAGE TAG
+      - echo $IMAGE_TAG
 
   build:
     commands:
       - echo Validating application
       - python3 -m py_compile test-app/app.py
       - echo Building Docker image
-      - docker build -t ${ECR_URI}:${IMAGE_TAG} ./test-app
+      - docker build -t $ECR_URI:$IMAGE_TAG ./test-app
 
   post_build:
     commands:
       - echo Pushing image to ECR
-      - docker push ${ECR_URI}:${IMAGE_TAG}
-      - echo Creating ECS deployment artifact
-      - python3 -c 'import json,os; print(json.dumps([{"name":"app","imageUri":os.environ["ECR_URI"]+":"+os.environ["IMAGE_TAG"]}]))' > imagedefinitions.json
+      - docker push $ECR_URI:$IMAGE_TAG
+      - echo Creating deployment artifact
+      - echo '[{"name":"app","imageUri":"'$ECR_URI':'$IMAGE_TAG'"}]' > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
