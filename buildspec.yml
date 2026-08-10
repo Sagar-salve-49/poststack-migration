@@ -5,8 +5,8 @@ phases:
     commands:
       - echo "Logging into Amazon ECR"
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/poststack-migration-dev-app
-      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
+      - ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/poststack-migration-uat-app
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
       - IMAGE_TAG=build-${CODEBUILD_BUILD_NUMBER}
       - echo "ECR_URI=${ECR_URI}"
       - echo "IMAGE_TAG=${IMAGE_TAG}"
