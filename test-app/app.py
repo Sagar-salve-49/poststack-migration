@@ -6,7 +6,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             body = b"OK\n"
         else:
-            body = b"Hello from PostStack Migration ECS!\n"
+            body = b"Hello from PostStack Migration ECS - CI/CD v2!\n"
 
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")
