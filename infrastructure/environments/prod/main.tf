@@ -3,9 +3,10 @@ data "aws_caller_identity" "current" {}
 module "networking" {
   source = "./modules/networking"
 
+  aws_region = var.aws_region
+
   project_name       = var.project_name
   environment        = var.environment
-  aws_region         = var.aws_region
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
 }
@@ -13,9 +14,10 @@ module "networking" {
 module "security" {
   source = "./modules/security"
 
+  aws_region = var.aws_region
+
   project_name           = var.project_name
   environment            = var.environment
-  aws_region             = var.aws_region
   vpc_id                 = module.networking.vpc_id
   vpc_cidr               = var.vpc_cidr
   private_app_subnet_ids = module.networking.private_app_subnet_ids
@@ -36,10 +38,10 @@ module "alb" {
 module "ecs" {
   source = "./modules/ecs"
 
-  aws_region                  = var.aws_region
+  aws_region = var.aws_region
+
   project_name                = var.project_name
   environment                 = var.environment
-  vpc_id                      = module.networking.vpc_id
   private_app_subnet_ids      = module.networking.private_app_subnet_ids
   app_security_group_id       = module.security.app_security_group_id
   ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn
@@ -48,31 +50,70 @@ module "ecs" {
   container_port              = var.container_port
 }
 
+module "rds" {
+  source = "./modules/rds"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  vpc_id             = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_app_subnet_ids
+
+  app_security_group_id = module.security.app_security_group_id
+
+  db_name           = "poststack"
+  db_username       = "postgres"
+  db_instance_class = "db.t3.micro"
+}
+
+module "lambda" {
+  source = "./modules/lambda"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  vpc_id             = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_app_subnet_ids
+}
 
 module "cicd_pipeline" {
   source = "./modules/cicd-pipeline"
 
+  aws_region = var.aws_region
+
   project_name = var.project_name
   environment  = var.environment
-  aws_region   = var.aws_region
 
   github_connection_arn = "arn:aws:codeconnections:ap-south-1:459640517515:connection/f4ada60d-bb62-42b2-b692-9277ae81b45c"
   github_repository     = "Sagar-salve-49/poststack-migration"
-  github_branch         = "master"
+  github_branch         = "prod"
 
-  codebuild_project_name = "poststack-migration-uat-codebuild"
+  codebuild_project_name = "${var.project_name}-${var.environment}-codebuild"
 
   ecs_cluster_name = module.ecs.ecs_cluster_name
   ecs_service_name = module.ecs.ecs_service_name
 
-  ecs_task_execution_role_arn = "arn:aws:iam::459640517515:role/poststack-migration-dev-ecs-task-execution"
-  ecs_task_role_arn           = "arn:aws:iam::459640517515:role/poststack-migration-dev-ecs-task"
+  ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn
+  ecs_task_role_arn           = module.security.ecs_task_role_arn
 }
 
 module "s3" {
-  source = "./modules/s3"
+  source = "../../modules/s3"
 
-  bucket_name  = "${var.project_name}-${var.environment}-app-data-${data.aws_caller_identity.current.account_id}"
+  bucket_name  = "${var.project_name}-${var.environment}-app-data-459640517515"
   environment  = var.environment
   project_name = var.project_name
+}
+
+module "cloudwatch" {
+  source = "../../modules/cloudwatch"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "bedrock" {
+  source = "../../modules/bedrock"
+
+  ecs_task_role_name = "poststack-migration-prod-ecs-task"
 }
