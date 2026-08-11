@@ -96,3 +96,24 @@ module "cicd_pipeline" {
   ecs_task_execution_role_arn = module.security.ecs_task_execution_role_arn
   ecs_task_role_arn           = module.security.ecs_task_role_arn
 }
+
+module "s3" {
+  source = "../../modules/s3"
+
+  bucket_name  = "${var.project_name}-${var.environment}-app-data-459640517515"
+  environment  = var.environment
+  project_name = var.project_name
+}
+
+module "cloudwatch" {
+  source = "../../modules/cloudwatch"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "bedrock" {
+  source = "../../modules/bedrock"
+
+  ecs_task_role_name = "poststack-migration-prod-ecs-task"
+}
