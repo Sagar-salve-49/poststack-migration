@@ -24,3 +24,19 @@ crash.*.log
 
 # OS files
 Thumbs.db
+
+# Terraform generated files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Terraform variable files containing environment-specific values
+**/terraform.tfvars
+**/*.tfvars
+
+# Local bootstrap/state backups
+bootstrap-backup/
+bootstrap-state/
